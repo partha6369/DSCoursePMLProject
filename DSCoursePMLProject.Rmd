@@ -1,0 +1,188 @@
+---
+title: "Practical Machine Learning Project"
+author: "Partha Majumdar"
+date: "18 September 2014"
+output: html_document
+---
+
+```{r loadLibraries, echo=FALSE}
+library(caret)
+library(randomForest)
+library(kernlab)
+library(pROC)
+```
+
+#Executive Summary
+
+##Introduction
+
+This document (as a HTML file) is created as a part of the Practical Machine Learning Course in the Data Science Specialisation from John Hopkins University through Coursera. This document is created using RStudio.
+
+The objective of this project is to use the data provided by Groupware@LES for their HAR Project (http://groupware.les.inf.puc-rio.br/har) and create a model for predicting the Class of the user using the different exercising equipment. The data provided by the group have been split into Training set and Testing set and are provided at https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv and https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv respectively.
+
+The document first provides the outcome of the model before proceeding to detail the method of establishing the model.
+
+##Summary of Outcome from the Model
+
+Two methods were applied after determining the predictors - Random Forest (RF) method and Support Vector Machine (SVM) method. The predictions from the 2 models were different for only one test case.
+
+The final predictions are as follows.
+-1  : B 
+-2  : A 
+-3  : C (as per SVM, A as per RF)
+-4  : A 
+-5  : A 
+-6  : E 
+-7  : D 
+-8  : B 
+-9  : A 
+-10 : A 
+-11 : B 
+-12 : C 
+-13 : B 
+-14 : A 
+-15 : E 
+-16 : E 
+-17 : A 
+-18 : B 
+-19 : B 
+-20 : B
+
+#Method of model preparation
+
+##Data Preparation
+
+Instead of using the links to obtain the data, the data for both the training and testing set was downloaded from the provided links and used in the project. To reproduce the analysis, one would need either downloading the apriori and storing it in the working directory OR making appropriate change to the code to obtain the data.
+
+```{r setDirectory, echo=FALSE}
+setwd("/Users/parthamajumdar/Documents/Education/John Hopkins University/Data Science/Work/DSCoursePMLProject")
+```
+
+```{r readData, cache=TRUE}
+training <- read.csv("pml-training.csv", sep=",", header=TRUE)
+testing <- read.csv("pml-testing.csv", sep=",", header=TRUE)
+```
+
+First, we remove the first 5 columns from the data as these are user information and will not be used as predictors.
+```{r removeObviousNonPredictors, cache=TRUE}
+training1 <- training[,-1:-5]
+testing1 <- testing[,-1:-5]
+```
+
+Next, we determine the near-zero-variance predictors and remove them from the dataset.
+```{r removeNearZeroVariancePredictors}
+columnsToRemove <- nearZeroVar(training1)
+training2 <- training1[,-columnsToRemove]
+testing2 <- testing1[,-columnsToRemove]
+```
+
+Next, we remove the columns with high correlation. We remove the predictors that result in absolute pairwise correlations greater than 0.90. As there is a lot of missing data in the dataset, some columns have been removed before calculating the correlation so that the findCorrelation() function does not fail.
+
+```{r removeCorrelatedVariable}
+i <- sapply(training2, is.factor)
+training2[i] <- lapply(training2[i], as.numeric)
+dataCorr <- cor(training2)
+training3 <- training2[!sapply(dataCorr[1,], function(x) is.na(x))]
+training3 <- subset(training3, select=-c(classe))
+i <- sapply(training3, is.factor)
+training3[i] <- lapply(training3[i], as.numeric)
+
+testing3 <- testing2[!sapply(dataCorr[1,], function(x) is.na(x))]
+testing3 <- subset(testing3, select=-c(problem_id))
+i <- sapply(testing3, is.factor)
+testing3[i] <- lapply(testing3[i], as.numeric)
+
+dataCorr <- cor(training3)
+highCorr <- findCorrelation(dataCorr, 0.90)
+training4 <- training3[, -highCorr]
+testing4 <- testing3[, -highCorr]
+```
+
+We also remove all the columns where the testing data does not have any values.
+
+```{r removeNA}
+training5 <- training4[!sapply(testing4, function(x) all(is.na(x)))]
+
+testing5 <- testing4[!sapply(testing4, function(x) all(is.na(x)))]
+```
+
+Next, we apply transformations on the training and the testing data so that the predictor variables are centered and/or scaled.
+
+```{r preProcess}
+xTrans <- preProcess(training5, method="pca")
+training6 <- predict(xTrans, training5)
+testing6 <- predict(xTrans, testing5)
+```
+
+As "classe" is the outcome variable, we reattach it in the dataset.
+```{r addOutcomeColumn}
+training7 <- cbind(training6, classe=training$classe)
+x <- rownames(training7)
+rownames(training7) <- make.names(x, unique=TRUE)
+```
+
+##Building and Tuning the Model
+
+We first build the model using the Random Forest method and Support Vector Machine with Radial Basis Function Kernel method.
+
+```{r createModelRF, cache=TRUE}
+bootControl <- trainControl(number = 25)
+set.seed(2)
+#fitRF <- train(classe ~ ., data=training7, method = "rf", tuneLength = 5, trControl = bootControl, scaled = FALSE)
+fitSVM <- train(classe ~ ., data=training7, method = "svmRadial", tuneLength = 5, trControl = bootControl, scaled = FALSE)
+
+#fitRF
+#fitRF$finalModel
+
+fitSVM
+fitSVM$finalModel
+```
+
+We see the plot of the created Model using Random Forest method (Note: This needs counting as 1 diagram as 4 plots are being fixed in one frame).
+
+```{r plotRF, echo=FALSE}
+par(mfrow=c(2,2))
+#plot(fitRF)
+#plot(fitRF, metric = "Kappa")
+#resampleHist(fitRF)
+```
+
+We see the plot of the created Model using the Support Vector Machine with Radial Basis Function Kernel method (Note: This needs counting as 1 diagram as 4 plots are being fixed in one frame).
+
+```{r plotSVM, echo=FALSE}
+par(mfrow=c(2,2))
+plot(fitSVM)
+plot(fitSVM, metric = "Kappa")
+resampleHist(fitSVM)
+```
+
+The confusion matrix for the model is given below.
+
+```{r ConfusionMatrix}
+confusionMatrix(fitSVM)
+```
+
+The variable importance is as follows.
+
+```{r VariableImportance}
+varImp(fitSVM)
+```
+
+##Predicting the Value
+
+We now use the testing dataset to predict the values.
+
+We predict with the model created using the Random Forest method and Support Vector Machine method.
+
+```{r prediction}
+#predict(fitRF$finalModel, newdata = testing6)
+predict(fitSVM$finalModel, newdata = testing6)
+```
+
+#Annexure
+
+##References
+
+-Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. - Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013
+
+-Max Kuhn - Building Predictive Models in R Using the caret Package
