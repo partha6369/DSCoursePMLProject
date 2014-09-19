@@ -1,7 +1,7 @@
 ---
 title: "Practical Machine Learning Project"
 author: "Partha Majumdar"
-date: "18 September 2014"
+date: "19 September 2014"
 output: html_document
 ---
 
@@ -27,26 +27,27 @@ The document first provides the outcome of the model before proceeding to detail
 Two methods were applied after determining the predictors - Random Forest (RF) method and Support Vector Machine (SVM) method. The predictions from the 2 models were different for only one test case.
 
 The final predictions are as follows.
--1  : B 
--2  : A 
--3  : C (as per SVM, A as per RF)
--4  : A 
--5  : A 
--6  : E 
--7  : D 
--8  : B 
--9  : A 
--10 : A 
--11 : B 
--12 : C 
--13 : B 
--14 : A 
--15 : E 
--16 : E 
--17 : A 
--18 : B 
--19 : B 
--20 : B
+
+- 1  : B 
+- 2  : A 
+- 3  : C (as per SVM, A as per RF. **Both outcomes are wrong**)
+- 4  : A 
+- 5  : A 
+- 6  : E 
+- 7  : D 
+- 8  : B 
+- 9  : A 
+- 10 : A 
+- 11 : B 
+- 12 : C 
+- 13 : B 
+- 14 : A 
+- 15 : E 
+- 16 : E 
+- 17 : A 
+- 18 : B 
+- 19 : B 
+- 20 : B
 
 #Method of model preparation
 
@@ -123,25 +124,52 @@ rownames(training7) <- make.names(x, unique=TRUE)
 
 ##Building and Tuning the Model
 
+
+*(*
+
+*From this point all the code has been commented out as the knitr was producing error as follows.*
+
+*==============================================================================================================*
+
+output file: DSCoursePMLProject.knit.md
+
+/Applications/RStudio.app/Contents/MacOS/pandoc/pandoc DSCoursePMLProject.utf8.md --to html --from markdown+autolink_bare_uris+ascii_identifiers+tex_math_single_backslash-implicit_figures --output DSCoursePMLProject.html --smart --email-obfuscation none --self-contained --standalone --section-divs --template /Users/parthamajumdar/Library/R/3.0/library/rmarkdown/rmd/h/default.html --variable 'theme:bootstrap' --include-in-header /var/folders/nm/r_65zbys4y9bqhz3djfy8_fr0000gn/T//RtmpSqQmxW/rmarkdown-stre3971b531fa.html --mathjax --variable 'mathjax-url:https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' --no-highlight --variable highlightjs=/Users/parthamajumdar/Library/R/3.0/library/rmarkdown/rmd/h/highlight 
+
+Stack space overflow: current size 16777216 bytes.
+
+Use `+RTS -Ksize -RTS' to increase it.
+
+Error: pandoc document conversion failed with error 2
+
+Execution halted
+
+*==============================================================================================================*
+
+*Could not find solution for this after trying for 4 days. As submission deadline was approaching, have resorted to omitting running this code in this document. However, as this code runs perfectly without producing the document on the R Command Line. Due to word limitation, have included the complete output of the code run in the submission box in the Coursera Web Site.*
+
+*Solutions applied included updating RStudio installation (some issued resolved) and updating pandoc installation. No solution found after search of the StackOverflow and internet.*
+
+*)*
+
 We first build the model using the Random Forest method and Support Vector Machine with Radial Basis Function Kernel method.
 
-```{r createModelRF, cache=TRUE}
+```{r createModel, cache=TRUE}
 bootControl <- trainControl(number = 25)
 set.seed(2)
 #fitRF <- train(classe ~ ., data=training7, method = "rf", tuneLength = 5, trControl = bootControl, scaled = FALSE)
-fitSVM <- train(classe ~ ., data=training7, method = "svmRadial", tuneLength = 5, trControl = bootControl, scaled = FALSE)
+#fitSVM <- train(classe ~ ., data=training7, method = "svmRadial", tuneLength = 5, trControl = bootControl, scaled = FALSE)
 
 #fitRF
 #fitRF$finalModel
 
-fitSVM
-fitSVM$finalModel
+#fitSVM
+#fitSVM$finalModel
 ```
 
 We see the plot of the created Model using Random Forest method (Note: This needs counting as 1 diagram as 4 plots are being fixed in one frame).
 
 ```{r plotRF, echo=FALSE}
-par(mfrow=c(2,2))
+#par(mfrow=c(2,2))
 #plot(fitRF)
 #plot(fitRF, metric = "Kappa")
 #resampleHist(fitRF)
@@ -150,22 +178,24 @@ par(mfrow=c(2,2))
 We see the plot of the created Model using the Support Vector Machine with Radial Basis Function Kernel method (Note: This needs counting as 1 diagram as 4 plots are being fixed in one frame).
 
 ```{r plotSVM, echo=FALSE}
-par(mfrow=c(2,2))
-plot(fitSVM)
-plot(fitSVM, metric = "Kappa")
-resampleHist(fitSVM)
+#par(mfrow=c(2,2))
+#plot(fitSVM)
+#plot(fitSVM, metric = "Kappa")
+#resampleHist(fitSVM)
 ```
 
 The confusion matrix for the model is given below.
 
 ```{r ConfusionMatrix}
-confusionMatrix(fitSVM)
+#confusionMatrix(fitSVM)
+#confusionMatrix(fitRF)
 ```
 
 The variable importance is as follows.
 
 ```{r VariableImportance}
-varImp(fitSVM)
+#varImp(fitSVM)
+#varImp(fitRF)
 ```
 
 ##Predicting the Value
@@ -176,7 +206,7 @@ We predict with the model created using the Random Forest method and Support Vec
 
 ```{r prediction}
 #predict(fitRF$finalModel, newdata = testing6)
-predict(fitSVM$finalModel, newdata = testing6)
+#predict(fitSVM$finalModel, newdata = testing6)
 ```
 
 #Annexure
